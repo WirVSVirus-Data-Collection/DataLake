@@ -21,6 +21,13 @@ class DataSource(ABC):
     def get_data(self):
         pass
 
+    def _data_cleansing(self, df):
+        return df
+
+    def _transform_data(self, df):
+        df = self._ensure_datetime(df)
+        return self._data_cleansing(df)
+
     def _ensure_datetime(self, df):
         for c in self.date_columns:
             df[c] = pd.to_datetime(df[c], format=self.date_format)
@@ -38,7 +45,7 @@ class JsonDataSource(DataSource):
 
     def get_data(self):
         df = pd.DataFrame(self._flatten_json(self._get_json()))
-        return self._ensure_datetime(df)
+        return self._transform_data(df)
 
 
 class HamburgClinics(JsonDataSource):
