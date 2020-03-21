@@ -1,0 +1,63 @@
+openapi: "3.0.1"
+info:
+  title: COVID-19 Data Lake API
+  version: "3.0.1"
+paths:
+  /{kind}:
+    summary: returns the latest data for the specified kind of information
+    parameters:
+      - $ref: '#/components/parameters/kind'
+
+  /{kind}/timeseries:
+    summary: |
+      returns data for the specified interval (from <= timestamp < to) at a fixed resolution for the
+      specified kind of information
+    parameters:
+      - $ref: '#/components/parameters/kind'
+      - $ref: '#/components/parameters/from'
+      - $ref: '#/components/parameters/to'
+
+  /{kind}/by/{by}:
+    summary: returns the latest data for the specified kind of information grouped by the specified criteria
+    parameters:
+      - $ref: '#/components/parameters/kind'
+      - $ref: '#/components/parameters/by'
+
+  /{kind}/by/{by}/timeseries:
+    summary: |
+      returns data for the specified interval (from <= timestamp < to) at a fixed resolution for the
+      specified kind of information grouped by the specified criteria
+    parameters:
+      - $ref: '#/components/parameters/kind'
+      - $ref: '#/components/parameters/by'
+      - $ref: '#/components/parameters/from'
+      - $ref: '#/components/parameters/to'
+
+components:
+  parameters:
+    kind:
+      name: kind
+      in: path
+      required: true
+      schema:
+        type: string
+    by:
+      name: kind
+      in: path
+      required: true
+      schema:
+        type: string
+    from:
+      name: from
+      in: query
+      required: false
+      schema:
+        type: string
+        description: an ISO 8601 formatted timestamp
+    to:
+      name: to
+      in: query
+      required: false
+      schema:
+        type: string
+        description: an ISO 8601 formatted timestamp
