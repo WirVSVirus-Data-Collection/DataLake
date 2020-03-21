@@ -12,7 +12,7 @@ John Hopkins University. The data is returned as flat `pandas.DataFrame`s.
 ## Usage
 
 ```
-    >>>from DatalLake.DataScraper import DataScraper
+    >>>from data_scraper import DataScraper
     >>>my_scraper = DataScraper()
     >>>my_scraper.infection_rate_state_wise.john_hopkins_university.url
     'https://fakeurl.com'
