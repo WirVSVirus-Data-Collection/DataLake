@@ -87,10 +87,6 @@ class RKIDataAgeGroupJson(JsonDataSource):
             flattened_data.append(dict_row['properties'])
         return flattened_data
 
-    def _data_cleansing(self,df):
-        return df
-
-
 
 class RKIDataCountyJson(JsonDataSource):
     def __init__(self):
@@ -115,6 +111,7 @@ class RKIDataStateJson(JsonDataSource):
             url="https://opendata.arcgis.com",
             endpoint="datasets/ef4b445a53c1406892257fe63129a8ea_0.geojson",
             info="Accumulated cases in federal states in Germany as per Robert-Koch-Institut.",
+            date_columns["Aktualisierung"]
         )
 
     def _flatten_json(self, json_data):
@@ -144,6 +141,7 @@ class RKIDataAgeGroupCsv(CsvDataSource):
                 url="https://opendata.arcgis.com",
                 endpoint="datasets/dd4580c810204019a7b8eb3e0b329dd6_0.csv",
                 info="Data from the Robert-Koch-Institut on the new cases per day. Sorted by gender, age group and county in Germany.",
+                date_columns=["Datenstand", "Meldedatum"]
             )
     def _data_cleansing(self, df):
         return df
@@ -164,4 +162,5 @@ class RKIDataStateCsv(CsvDataSource):
             url="https://opendata.arcgis.com",
             endpoint="datasets/ef4b445a53c1406892257fe63129a8ea_0.csv",
             info="Accumulated cases in federal states in Germany as per Robert-Koch-Institut.",
+            date_columns["Aktualisierung"]
         )
