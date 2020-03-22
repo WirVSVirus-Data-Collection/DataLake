@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 import requests
-
+import io
 import pandas as pd
+import re
 
 
 class DataSource(ABC):
@@ -25,8 +26,8 @@ class DataSource(ABC):
         return df
 
     def _transform_data(self, df):
-        df = self._ensure_datetime(df)
-        return self._data_cleansing(df)
+        df = self._data_cleansing(df)
+        return self._ensure_datetime(df)
 
     def _ensure_datetime(self, df):
         for c in self.date_columns:
@@ -66,3 +67,32 @@ class HamburgClinics(JsonDataSource):
             final_row["longitude"] = coordinates[1]
             flattened_data.append(final_row)
         return flattened_data
+
+class CsvDataSource(DataSource):
+    def _get_csv(self):
+        response = requests.get(self.url + "/" + self.endpoint)
+        response.raise_for_status()
+        decoded_content = response.content.decode()
+        return decoded_content
+
+    def get_data(self):
+        df = pd.read_csv(io.StringIO(self._get_csv()), sep=',')
+        return self._transform_data(df)
+
+class RKIDataAgeGroup(CsvDataSource):
+    def __init__(self):
+        super(RKIDataAgeGroup, self).__init__(
+                url="https://opendata.arcgis.com",
+                endpoint="datasets/dd4580c810204019a7b8eb3e0b329dd6_0.csv",
+                info="Data from the Robert-Koch-Institut on the new cases per day. Sorted by gender, age group and county in Germany.",
+            )
+    def _data_cleansing(self, df):
+        return df
+
+class RKIDataCounty(CsvDataSource):
+    def __init__(self):
+        super(RKIDataCounty, self).__init__(
+                url="https://opendata.arcgis.com",
+                endpoint="datasets/ef4b445a53c1406892257fe63129a8ea_0.csv",
+                info="Data from the Robert-Koch-Institut on the current cases per county.",
+            )
