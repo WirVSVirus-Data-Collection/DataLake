@@ -68,6 +68,58 @@ class HamburgClinics(JsonDataSource):
             flattened_data.append(final_row)
         return flattened_data
 
+
+class RKIDataAgeGroupJson(JsonDataSource):
+    def __init__(self):
+        super(RKIDataAgeGroupJson, self).__init__(
+            url="https://opendata.arcgis.com",
+            endpoint="datasets/dd4580c810204019a7b8eb3e0b329dd6_0.geojson",
+            info="Data from the Robert-Koch-Institut on the new cases per day. Sorted by gender, age group and county in Germany.",
+        )
+
+    def _flatten_json(self, json_data):
+        flattened_data = []
+        for dict_row in json_data['features']:
+            # value of 'properties' is itself a dictionary
+            # a list of dictionaries can easily be put into a pandas.DataFrame
+            flattened_data.append(dict_row['properties'])
+        return flattened_data
+
+
+class RKIDataCountyJson(JsonDataSource):
+    def __init__(self):
+        super(RKIDataCountyJson, self).__init__(
+            url="https://opendata.arcgis.com",
+            endpoint="datasets/917fc37a709542548cc3be077a786c17_0.geojson",
+            info="Data from the Robert-Koch-Institut on the current cases per county.",
+        )
+
+    def _flatten_json(self, json_data):
+        flattened_data = []
+        for dict_row in json_data['features']:
+            # value of 'properties' is itself a dictionary
+            # a list of dictionaries can easily be put into a pandas.DataFrame
+            flattened_data.append(dict_row['properties'])
+        return flattened_data
+
+
+class RKIDataStateJson(JsonDataSource):
+    def __init__(self):
+        super(RKIDataStateJson, self).__init__(
+            url="https://opendata.arcgis.com",
+            endpoint="datasets/ef4b445a53c1406892257fe63129a8ea_0.geojson",
+            info="Accumulated cases in federal states in Germany as per Robert-Koch-Institut.",
+        )
+
+    def _flatten_json(self, json_data):
+        flattened_data = []
+        for dict_row in json_data['features']:
+            # value of 'properties' is itself a dictionary
+            # a list of dictionaries can easily be put into a pandas.DataFrame
+            flattened_data.append(dict_row['properties'])
+        return flattened_data
+
+
 class CsvDataSource(DataSource):
     def _get_csv(self):
         response = requests.get(self.url + "/" + self.endpoint)
@@ -79,9 +131,10 @@ class CsvDataSource(DataSource):
         df = pd.read_csv(io.StringIO(self._get_csv()), sep=',')
         return self._transform_data(df)
 
-class RKIDataAgeGroup(CsvDataSource):
+
+class RKIDataAgeGroupCsv(CsvDataSource):
     def __init__(self):
-        super(RKIDataAgeGroup, self).__init__(
+        super(RKIDataAgeGroupCsv, self).__init__(
                 url="https://opendata.arcgis.com",
                 endpoint="datasets/dd4580c810204019a7b8eb3e0b329dd6_0.csv",
                 info="Data from the Robert-Koch-Institut on the new cases per day. Sorted by gender, age group and county in Germany.",
@@ -89,10 +142,20 @@ class RKIDataAgeGroup(CsvDataSource):
     def _data_cleansing(self, df):
         return df
 
-class RKIDataCounty(CsvDataSource):
+
+class RKIDataCountyCsv(CsvDataSource):
     def __init__(self):
-        super(RKIDataCounty, self).__init__(
+        super(RKIDataCountyCsv, self).__init__(
                 url="https://opendata.arcgis.com",
-                endpoint="datasets/ef4b445a53c1406892257fe63129a8ea_0.csv",
+                endpoint="datasets/917fc37a709542548cc3be077a786c17_0.csv",
                 info="Data from the Robert-Koch-Institut on the current cases per county.",
             )
+
+
+class RKIDataStateCsv(CsvDataSource):
+    def __init__(self):
+        super(RKIDataStateCsv, self).__init__(
+            url="https://opendata.arcgis.com",
+            endpoint="datasets/ef4b445a53c1406892257fe63129a8ea_0.csv",
+            info="Accumulated cases in federal states in Germany as per Robert-Koch-Institut.",
+        )
