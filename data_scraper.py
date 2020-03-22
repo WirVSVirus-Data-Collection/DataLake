@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from dateutil.parser import parse
 import numpy as np
 import requests
 import io
@@ -33,7 +32,7 @@ class DataSource(ABC):
 
     def _ensure_datetime(self, df):
         for c in self.date_columns:
-            df[c] = [parse(item).strftime(self.date_format) for item in df[c]]
+            df[c] = pd.to_datetime(df[c], infer_datetime_format=True, format=self.date_format)
         return df
 
 
@@ -87,6 +86,10 @@ class RKIDataAgeGroupJson(JsonDataSource):
             # a list of dictionaries can easily be put into a pandas.DataFrame
             flattened_data.append(dict_row['properties'])
         return flattened_data
+
+    def _data_cleansing(self,df):
+        return df
+
 
 
 class RKIDataCountyJson(JsonDataSource):
