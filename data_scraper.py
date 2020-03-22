@@ -165,6 +165,3 @@ class RKIDataStateCsv(CsvDataSource):
             endpoint="datasets/ef4b445a53c1406892257fe63129a8ea_0.csv",
             info="Accumulated cases in federal states in Germany as per Robert-Koch-Institut.",
         )
-dummy = RKIDataAgeGroupJson()
-data = dummy.get_data()
-print(data.head())
