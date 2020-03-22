@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+from dateutil.parser import parse
+import numpy as np
 import requests
 import io
 import pandas as pd
@@ -31,7 +33,7 @@ class DataSource(ABC):
 
     def _ensure_datetime(self, df):
         for c in self.date_columns:
-            df[c] = pd.to_datetime(df[c], format=self.date_format)
+            df[c] = [parse(item).strftime(self.date_format) for item in df[c]]
         return df
 
 
@@ -75,6 +77,7 @@ class RKIDataAgeGroupJson(JsonDataSource):
             url="https://opendata.arcgis.com",
             endpoint="datasets/dd4580c810204019a7b8eb3e0b329dd6_0.geojson",
             info="Data from the Robert-Koch-Institut on the new cases per day. Sorted by gender, age group and county in Germany.",
+            date_columns=["Datenstand", "Meldedatum"]
         )
 
     def _flatten_json(self, json_data):
@@ -159,3 +162,6 @@ class RKIDataStateCsv(CsvDataSource):
             endpoint="datasets/ef4b445a53c1406892257fe63129a8ea_0.csv",
             info="Accumulated cases in federal states in Germany as per Robert-Koch-Institut.",
         )
+dummy = RKIDataAgeGroupJson()
+data = dummy.get_data()
+print(data.head())
