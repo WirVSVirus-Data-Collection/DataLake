@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 import requests
 
-from datetime import datetime
-
 import io
 import pandas as pd
 import boto3
@@ -10,10 +8,16 @@ import boto3
 BUCKET_NAME_LANDING_ZONE = "wirvsvirus-data-lake-landing-zone"
 
 
+class DatasetKinds(object):
+    health_care_capacity = "health_care_capacity"
+    infection_cases = "infection_cases"
+
+
 class DataSource(ABC):
     def __init__(
         self,
         name,
+        kind,
         url,
         endpoint="",
         info="",
@@ -21,6 +25,7 @@ class DataSource(ABC):
         date_format="%d.%m.%Y",
     ):
         self.name = name
+        self.kind = kind
         self.url = url
         self.endpoint = endpoint
         self.info = info
@@ -43,15 +48,17 @@ class DataSource(ABC):
 
     def _ensure_datetime(self, df):
         for c in self.date_columns:
-            df[c] = pd.to_datetime(df[c], infer_datetime_format=True, format=self.date_format)
+            df[c] = pd.to_datetime(
+                df[c], infer_datetime_format=True, format=self.date_format
+            )
         return df
 
     def write_to_s3(self, s3_client, bucket=BUCKET_NAME_LANDING_ZONE):
         df = self.get_data()
         csv_string = df.to_csv(sep=",", index=False)
-        timestamp = datetime.now().strftime("%Y-%m-%dT%H%M%S")
-        filename = self.name.replace(" ", "_") + "_" + timestamp + ".csv"
-        response = s3_client.put_object(Bucket=bucket, Key=filename, Body=csv_string)
+        folder_name = self.kind + "__" + self.name.replace(" ", "_")
+        key = folder_name + "/data.csv"
+        response = s3_client.put_object(Bucket=bucket, Key=key, Body=csv_string)
         return response
 
 
@@ -73,6 +80,7 @@ class HamburgClinics(JsonDataSource):
     def __init__(self):
         super(HamburgClinics, self).__init__(
             name="hamburg_clinics",
+            kind=DatasetKinds.health_care_capacity,
             url="https://opendata.arcgis.com/",
             endpoint="datasets/78dc2cd921114c839a21aa8ed48760bc_0.geojson",
             info="Capacity of clinics Hamburg 2016",
@@ -87,62 +95,6 @@ class HamburgClinics(JsonDataSource):
             final_row["latitude"] = coordinates[0]
             final_row["longitude"] = coordinates[1]
             flattened_data.append(final_row)
-        return flattened_data
-
-
-class RKIDataAgeGroupJson(JsonDataSource):
-    def __init__(self):
-        super(RKIDataAgeGroupJson, self).__init__(
-            name="RKI_age_group",
-            url="https://opendata.arcgis.com",
-            endpoint="datasets/dd4580c810204019a7b8eb3e0b329dd6_0.geojson",
-            info="Data from the Robert-Koch-Institut on the new cases per day. Sorted by gender, age group and county in Germany.",
-            date_columns=["Datenstand", "Meldedatum"]
-        )
-
-    def _flatten_json(self, json_data):
-        flattened_data = []
-        for dict_row in json_data["features"]:
-            # value of 'properties' is itself a dictionary
-            # a list of dictionaries can easily be put into a pandas.DataFrame
-            flattened_data.append(dict_row["properties"])
-        return flattened_data
-
-
-class RKIDataCountyJson(JsonDataSource):
-    def __init__(self):
-        super(RKIDataCountyJson, self).__init__(
-            name="RKI_county",
-            url="https://opendata.arcgis.com",
-            endpoint="datasets/917fc37a709542548cc3be077a786c17_0.geojson",
-            info="Data from the Robert-Koch-Institut on the current cases per county.",
-        )
-
-    def _flatten_json(self, json_data):
-        flattened_data = []
-        for dict_row in json_data["features"]:
-            # value of 'properties' is itself a dictionary
-            # a list of dictionaries can easily be put into a pandas.DataFrame
-            flattened_data.append(dict_row["properties"])
-        return flattened_data
-
-
-class RKIDataStateJson(JsonDataSource):
-    def __init__(self):
-        super(RKIDataStateJson, self).__init__(
-            name="RKI_state",
-            url="https://opendata.arcgis.com",
-            endpoint="datasets/ef4b445a53c1406892257fe63129a8ea_0.geojson",
-            info="Accumulated cases in federal states in Germany as per Robert-Koch-Institut.",
-            date_columns=["Aktualisierung"]
-        )
-
-    def _flatten_json(self, json_data):
-        flattened_data = []
-        for dict_row in json_data["features"]:
-            # value of 'properties' is itself a dictionary
-            # a list of dictionaries can easily be put into a pandas.DataFrame
-            flattened_data.append(dict_row["properties"])
         return flattened_data
 
 
@@ -161,12 +113,14 @@ class CsvDataSource(DataSource):
 class RKIDataAgeGroupCsv(CsvDataSource):
     def __init__(self):
         super(RKIDataAgeGroupCsv, self).__init__(
-                name="RKI_age_group_level",
-                url="https://opendata.arcgis.com",
-                endpoint="datasets/dd4580c810204019a7b8eb3e0b329dd6_0.csv",
-                info="Data from the Robert-Koch-Institut on the new cases per day. Sorted by gender, age group and county in Germany.",
-                date_columns=["Datenstand", "Meldedatum"]
-            )
+            name="RKI_age_group_level",
+            kind=DatasetKinds.infection_cases,
+            url="https://opendata.arcgis.com",
+            endpoint="datasets/dd4580c810204019a7b8eb3e0b329dd6_0.csv",
+            info="Data from the Robert-Koch-Institut on the new cases per day. Sorted by gender, age group and county in Germany.",
+            date_columns=["Datenstand", "Meldedatum"],
+        )
+
     def _data_cleansing(self, df):
         return df
 
@@ -175,6 +129,7 @@ class RKIDataCountyCsv(CsvDataSource):
     def __init__(self):
         super(RKIDataCountyCsv, self).__init__(
             name="RKI_county_level",
+            kind=DatasetKinds.infection_cases,
             url="https://opendata.arcgis.com",
             endpoint="datasets/917fc37a709542548cc3be077a786c17_0.csv",
             info="Data from the Robert-Koch-Institut on the current cases per county.",
@@ -185,15 +140,22 @@ class RKIDataStateCsv(CsvDataSource):
     def __init__(self):
         super(RKIDataStateCsv, self).__init__(
             name="RKI_state_level",
+            kind=DatasetKinds.infection_cases,
             url="https://opendata.arcgis.com",
             endpoint="datasets/ef4b445a53c1406892257fe63129a8ea_0.csv",
             info="Accumulated cases in federal states in Germany as per Robert-Koch-Institut.",
-            date_columns=["Aktualisierung"]
+            date_columns=["Aktualisierung"],
         )
 
 
 def lambda_handler(message, context):
     s3_client = boto3.client("s3")
-    hamburg_clinics = HamburgClinics()
-    response = hamburg_clinics.write_to_s3(s3_client)
+    datasets = [
+        HamburgClinics(),
+        RKIDataAgeGroupCsv(),
+        RKIDataStateCsv(),
+        RKIDataCountyCsv(),
+    ]
+    for item in datasets:
+        response = item.write_to_s3(s3_client)
     return response
