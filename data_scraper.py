@@ -173,7 +173,7 @@ class RKIDataCountyCsv(CsvDataSource):
         )
 
         # get the 'SK' or 'LK' for Stadtkreis (city county) or Landkreis (rural county)
-        df["county"] = df["county"].str.slice(start=2)
+        df["county"] = df["county"].str.slice(stop=2)
 
         df.rename(
             columns={
