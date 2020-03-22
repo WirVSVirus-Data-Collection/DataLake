@@ -135,6 +135,51 @@ class RKIDataCountyCsv(CsvDataSource):
             info="Data from the Robert-Koch-Institut on the current cases per county.",
         )
 
+    def _data_cleansing(self, df):
+        # data of mostly bureaucratic nature, hard to decipher its meaning, likely not relevant for corona-virus
+        # instead of subselecting actually needed data (thereby silently removing data), these columns are removed
+        df.drop(labels=[
+                       "OBJECTID",
+                       "ADE",
+                       "GF",
+                       "BSG",
+                       "RS",
+                       "AGS",
+                       "SDV_RS",
+                       "BEZ",
+                       "IBZ",
+                       "BEM",
+                       "NBD",
+                       "SN_L",
+                       "SN_R",
+                       "SN_K",
+                       "SN_V1",
+                       "SN_V2",
+                       "SN_G",
+                       "FK_S3",
+                       "NUTS",
+                       "RS_0",
+                       "AGS_0",
+                       "WSK",
+                       "DEBKG_ID",
+                       "Shape__Area",
+                       "Shape__Length",
+                       "cases_per_population",  # duplicated information
+                       "BL_ID",
+                       ], axis="columns", inplace=True)
+
+        # get the 'SK' or 'LK' for Stadtkreis (city county) or Landkreis (rural county)
+        df['county'] = [name.replace(name[2:], "") for name in df['county']]
+
+        df.rename(columns={'county': 'kind_of_county',
+                           'BL': 'federal_state',
+                           'GEN': 'county',
+                           'cases': 'cumulative_cases',
+                           'EWZ': 'population',
+                           'KFL': 'county_area_km2'
+                           }, inplace=True)
+        return df
+
 
 class RKIDataStateCsv(CsvDataSource):
     def __init__(self):
